@@ -43,7 +43,7 @@ with open('snowfall-history.json') as f:
             snow_amt[day_ct] += (day['new_snow'])
             day_ct += 1
 # we now take the average of the snow amount for each day and then put that into our ranges
-new_snow = [put_into_range((x // 4)) for x in snow_amt]
+new_snow = [put_into_range((x * .96 // 4)) for x in snow_amt]
 
 # we split it into months so the whole system isnt decided by one month but more on a per month basis
 new_snow = np.array_split(new_snow, 6)
@@ -118,7 +118,9 @@ import matplotlib.pyplot as plt
 
 plt.figure(figsize=(12, 6))
 plt.plot(cumulative_snowfall, label='Cumulative Snowfall', color='blue')
-plt.title("Snow Accumulation Over the Season (Markov Chain Simulation)")
+plt.fill_between(np.arange(len(cumulative_snowfall)), cumulative_snowfall, color='blue', alpha=0.3)
+
+plt.title("Snow Accumulation Over the Season (Markov Chain Simulation). Total Snowfall: {:.2f} inches".format(cumulative_snowfall[-1]))
 plt.xlabel("Day of Season")
 plt.ylabel("Total Snowfall (inches)")
 plt.grid(True)
