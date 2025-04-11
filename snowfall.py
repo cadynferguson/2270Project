@@ -104,6 +104,8 @@ for month_index in range(6):
         # also have  achance to decrease the storm strength. this is configurable and highly noticable
         if random.random() > 0.9 and next_category != 0:
             next_category -= 1
+        if random.random() > 0.99 and next_category < 8:
+            next_category += 2
         snow_day_categories.append(next_category)
         current_category = next_category
 
@@ -114,16 +116,25 @@ daily_snowfall = [get_value_out_of_range(cat) for cat in snow_day_categories]
 cumulative_snowfall = np.cumsum(daily_snowfall)
 
 # plot it
+
+days = np.arange(len(cumulative_snowfall))
+
 import matplotlib.pyplot as plt
+month_start_days = [0, 31, 61, 92, 123, 151]  # Adjust as needed
+month_labels = ['Oct', 'Nov', 'Dec', 'Jan', 'Feb', 'Mar']
+
+combined_labels = [f"{day} ({month})" for day, month in zip(month_start_days, month_labels)]
 
 plt.figure(figsize=(12, 6))
 plt.plot(cumulative_snowfall, label='Cumulative Snowfall', color='blue')
-plt.fill_between(np.arange(len(cumulative_snowfall)), cumulative_snowfall, color='blue', alpha=0.3)
-
+plt.fill_between(days, cumulative_snowfall, color='blue', alpha=0.3)
+plt.xticks(month_start_days, combined_labels)
+plt.xlim(days[0], days[-1])
+plt.ylim(0, max(cumulative_snowfall) + 100)
 plt.title("Snow Accumulation Over the Season (Markov Chain Simulation). Total Snowfall: {:.2f} inches".format(cumulative_snowfall[-1]))
 plt.xlabel("Day of Season")
 plt.ylabel("Total Snowfall (inches)")
 plt.grid(True)
-plt.legend()
+plt.legend(loc='best')
 plt.tight_layout()
 plt.show()
