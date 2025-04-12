@@ -70,6 +70,111 @@ def normalize(matrix):
             matrix[i] /= row_sum
     return matrix
 
+
+def find_stead_state(P):
+    """
+    Computes the solution to vP = v or v(P - I) = 0 or (P^T - I)v = 0 because P is a row-stochastic matrix
+
+    :param P: An nxn matrix where the sum of each row is one
+    :return: The steady state vector associated with P
+    """
+    n = P.shape[0]
+    if n != P.shape[1]:
+        raise ValueError("Matrix P must be square.")
+
+    # 1) Build Q = P^T, which is column-stochastic.
+    Q = P.T
+
+    # 2) Solve (Q - I)x = 0 with sum(x)=1.
+    A = Q - np.eye(n)
+    b = np.zeros(n)
+
+    # Impose sum(x) = 1 by overwriting the last row of A:
+    A[-1, :] = 1.0
+    b[-1] = 1.0
+
+    # 3) Solve the system
+    x = np.linalg.solve(A, b)
+
+    # 4) Fix numerical issues: no negative probs, then normalize
+    x = np.clip(x, 0, None)
+    x_sum = x.sum()
+
+
+    # 5) The left eigenvector = row vector
+    v = x.T
+    return v
+
+def pretty_print_array(arr, decimals=2):
+    """
+    Prints a NumPy array or Python list in a nicely aligned, table-like format.
+    - If 'arr' is 1D, it treats it as a single row.
+    - If 'arr' is 2D, it prints each row in columns.
+
+    Parameters
+    ----------
+    arr : array-like
+        The vector (1D) or matrix (2D) to print.
+    decimals : int
+        Number of decimal places to show.
+    """
+    # Convert to np.array for convenience
+    arr = np.array(arr)
+
+    # If it's a 1D array, reshape to (1, n)
+    if arr.ndim == 1:
+        arr = arr.reshape(1, -1)
+
+    rows, cols = arr.shape
+
+    # Format each element to the specified decimal precision
+    string_matrix = [
+        [f"{val:.{decimals}f}" for val in row]
+        for row in arr
+    ]
+
+    # Determine the max width of each column for alignment
+    col_widths = [
+        max(len(string_matrix[r][c]) for r in range(rows))
+        for c in range(cols)
+    ]
+
+    # Print each row with columns aligned
+    for r in range(rows):
+        row_str = " | ".join(
+            string_matrix[r][c].rjust(col_widths[c])
+            for c in range(cols)
+        )
+        print(row_str)
+
+def pretty_print_matrix(mat, decimals=2):
+    """
+    Prints a 2D NumPy array in a nicely aligned table format.
+
+    Parameters
+    ----------
+    mat : np.ndarray
+        The matrix to print (2D).
+    decimals : int
+        How many decimal places to show.
+    """
+    rows, cols = mat.shape
+
+    # Convert every element to a string with the specified decimal precision
+    string_matrix = [[f"{val:.{decimals}f}" for val in row] for row in mat]
+
+    # Find the max width of each column so we can align properly
+    col_widths = [max(len(string_matrix[r][c]) for r in range(rows)) for c in range(cols)]
+
+    # Print each row, aligning columns
+    for r in range(rows):
+        row_str = " | ".join(
+            string_matrix[r][c].rjust(col_widths[c]) for c in range(cols)
+        )
+        print(row_str)
+
+
+
 # normalize each matrix
 for i in range(len(new_snow)):
     new_snow[i] = normalize(new_snow[i])
@@ -109,6 +214,15 @@ for month_index in range(6):
         snow_day_categories.append(next_category)
         current_category = next_category
 
+# print steady state vectors
+for i in range(len(new_snow)):
+    pretty_print_array(find_stead_state(new_snow[i]))
+    print('\n')
+
+for i in range(len(new_snow)):
+    pretty_print_matrix(new_snow[i])
+    print('\n')
+
 # get an average of the value of the snow day categories for our estimate
 daily_snowfall = [get_value_out_of_range(cat) for cat in snow_day_categories]
 
@@ -125,6 +239,10 @@ month_labels = ['Oct', 'Nov', 'Dec', 'Jan', 'Feb', 'Mar']
 
 combined_labels = [f"{day} ({month})" for day, month in zip(month_start_days, month_labels)]
 
+
+##################################################
+# 1) PLOT THE CUMULATIVE SNOWFALL
+##################################################
 plt.figure(figsize=(12, 6))
 plt.plot(cumulative_snowfall, label='Cumulative Snowfall', color='blue')
 plt.fill_between(days, cumulative_snowfall, color='blue', alpha=0.3)
@@ -138,3 +256,17 @@ plt.grid(True)
 plt.legend(loc='best')
 plt.tight_layout()
 plt.show()
+
+##################################################
+# 2) COMPUTE & PLOT THE DERIVATIVE
+##################################################
+cumulative_derivative = np.gradient(cumulative_snowfall, days)
+plt.figure()  # separate figure
+plt.plot(days, cumulative_derivative)
+plt.title("Derivative of Cumulative Snowfall (Snowfall Rate)")
+plt.xlabel("Day of Season")
+plt.ylabel("Rate of Snowfall (inches/day)")
+plt.grid(True)
+plt.tight_layout()
+plt.show()
+
